@@ -1,4 +1,3 @@
-import mimetypes
 import shutil
 import os 
 
@@ -59,13 +58,13 @@ FILE_TYPES = {
 }
 
 def get_file_type(file):
-    file_ext = os.path.splitext(file)[1]
+    file_ext = os.path.splitext(file)[1].lower()
     for file_type, extensions in FILE_TYPES.items():
         if file_ext in extensions:
             return file_type
     return 'other'
     
-class handle_user:
+class Base:
     def __init__(self, path):
         self.folder_path = path
         self.specific_folder = None
@@ -103,8 +102,7 @@ class handle_user:
 
             if file_num > len(temp_file_dict): 
                 print(f"Invalid number {file_num}, please enter a valid number")
-
-            self.specific_files.append(temp_file_dict.get(file_num, ''))
+                continue
 
             if file_num == 0:
                 if self.specific_files: 
@@ -113,8 +111,11 @@ class handle_user:
                 else: print('No file selected')
                 return 
 
+            self.specific_files.append(temp_file_dict.get(file_num, ''))
 
-class organiser(handle_user):
+
+
+class Organiser(Base):
     def __init__(self, path):
         super().__init__(path)
         
@@ -149,7 +150,7 @@ print("→ Enter '1' for creating a custom folder")
 print("→ Enter '2' for not changing specific files location\n")
 user_folder = input("Enter an absolute folder path for organising: ")
 
-ob = organiser(user_folder)
+ob = Organiser(user_folder)
 if ob.exists:
     ob.handle_user_choice()
     while True:
