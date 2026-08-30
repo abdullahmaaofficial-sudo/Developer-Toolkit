@@ -1,30 +1,27 @@
 from random import choices,shuffle
 
 ALPHABETS = 'abcdefghijklmnopqrstuvwxyz'
-SIGNS = "/.,;!@#$%^&*()_}{`~><?"
-NUMBERS = '0123456789'
+SIGNS = "/;!@#$%^&*()_}{~><?-=+"
+DIGITS = '0123456789'
 
 print("========== Password Generator ==========")
-print("Guaid (2-4-5): alphabets amount, signs amount, digits amount\n")
+print("Guaid (1-2-4-5): capital alphabets,small alphabets amount, signs amount, digits amount\n")
 
 while True:
-    user_input = input("Enter a range like this (2-4-5), Enter anything to quit: ")
+    user_input = input("Enter a range like this (1-2-4-5), Enter anything to quit: ")
 
     try:
-        alp,sig,num = user_input.split('-') 
+       c_alphabets_amount,alphabets_amount,signs_amount,digits_amount = user_input.split('-') 
     except:
-        print("Program finished")
+        print("Program Ended")
         break
 
-    if not alp or not sig or not num:
-        print("Invalid input, valid input (1-2-3)")
-        break
+    selected_signs = ''.join(choices(SIGNS, k = int(signs_amount)))
+    selected_alphabets = ''.join(choices(ALPHABETS, k = int(alphabets_amount)))
+    selected_c_alphabets = ''.join(choices(ALPHABETS.upper(), k = int(c_alphabets_amount)))
+    selected_digits = ''.join(choices(DIGITS, k = int(digits_amount)))
 
-    alpha = ''.join(choices(ALPHABETS, k = int(alp)))
-    sign = ''.join(choices(SIGNS, k = int(sig)))
-    num = ''.join(choices(NUMBERS, k = int(num)))
-
-    password = [x for x in f"{alpha}{sign}{num}"]
+    password = [x for x in f"{selected_c_alphabets}{selected_alphabets}{selected_signs}{selected_digits}"]
     # print(f"Before Shuffle: {password}")
     shuffle(password)
 
