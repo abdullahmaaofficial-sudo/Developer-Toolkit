@@ -5,7 +5,7 @@ SIGNS = "/;!@#$%^&*()_}{~><?-=+"
 DIGITS = '0123456789'
 
 print("========== Password Generator ==========")
-print("Guaid (1-2-4-5): capital alphabets,small alphabets amount, signs amount, digits amount\n")
+print("Guide (1-2-4-5): capital alphabets,small alphabets amount, signs amount, digits amount\n")
 
 while True:
     user_input = input("Enter a range like this (1-2-4-5), Enter anything to quit: ")
