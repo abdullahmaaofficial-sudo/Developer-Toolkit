@@ -9,12 +9,14 @@ def write_json(data):
         json.dump(data,file,indent = 2) 
 
 def load_json():
+    if not os.path.exists(FILE_PATH): 
+        print("Load Error: Hashes file not exists.")
+        return {}
     try:
         with open(FILE_PATH, 'r') as file:
             return json.load(file)
     except Exception as e:
         print("JSON Error: ",e)
-        return {}
 
 def get_all_files(path):
     return [os.path.join(root,file) for root, subfolder, files in os.walk(path) for file in files]
@@ -48,29 +50,39 @@ class HashGenerator:
             file_hash = self.generate_hash(file_path = file)
             if file_hash: data.update({file : file_hash})
         write_json(data = data)
+        print("~ Folder hashed")
 
     def save_hashed_file(self):
         data = load_json()
         file_hash = self.generate_hash(file_path = self.path)
+        if not file_hash:  return None
         data.update({self.path: file_hash})
         write_json(data = data)
+        print("~ File hashed")
 
 class FileIntegrityChecker:
     def __init__(self, path):
         self.file_path = path
 
-    def file_in_json(self):
+    def file_in_json(self, file_path):
         data = load_json()
-        return data.get(self.file_path)
+        return data.get(file_path)
 
     def folder_in_json(self):
         data = load_json()
-        return [file for file in data if os.path.commonpath([self.file_path, file]) == self.file_path]
+        folder_files = []
+        for file in data:
+            try: 
+                if os.path.commonpath([self.file_path, os.path.abspath(file)]) == self.file_path:
+                    folder_files.append(file)
+            except ValueError:
+                continue
+        return folder_files
     
     def check_file(self, file_path = None):
         file_path = file_path or self.file_path
         generator = HashGenerator(path = file_path)
-        saved_hash = self.file_in_json()
+        saved_hash = self.file_in_json(file_path)
         if saved_hash:
             current_hash = generator.generate_hash()
             return saved_hash == current_hash if current_hash else None
@@ -79,24 +91,36 @@ class FileIntegrityChecker:
     def check_folder(self):
         all_files = get_all_files(path = self.file_path)
         saved_files = self.folder_in_json()
+        unchecked_files = [] 
+        changed_files = []
+
+        for file in saved_files:
+            result = self.check_file(file)
+            if result is False: changed_files.append(file)
+            elif result is None: unchecked_files.append(file)
+
         new_files = [file for file in all_files if not file in saved_files]
         deleted_files = [file for file in saved_files if not file in all_files]
-        changed_files = [file for file in saved_files if self.check_file(file_path = file) is False]
-
 
         while True:
-            print(f"Total Files: {len(all_files)}")
+            print(f"\nTotal Files: {len(all_files)}")
             print(f"* Changed files: {len(changed_files)}")
             print(f"+ New files: {len(new_files)}")
             print(f"- Deleted files: {len(deleted_files)}\n")
+            if unchecked_files: 
+                print(f"! Unchecked files: {len(unchecked_files)}")
+                print("→ Reasons: \n - Not hashed yet. \n - Due to hash error.\n")
 
             choice = input("Enter the symbol to see the files (q to quit): ")
             if choice.lower() == 'q': break
-            if not choice in ['*','+','-']: print("Choice Error: Invalid choice!")
+            if not choice in ['*','+','-', '!']: 
+                print("Choice Error: Invalid choice!")
+                continue
 
             if choice == '*': show_files(files = changed_files, header = "Changed Files: ", symbol = choice)
             elif choice == '+': show_files(files = new_files, header = "New Files: ", symbol = choice)
             elif choice == '-': show_files(files = deleted_files, header = "Deleted Files: ", symbol = choice)
+            elif choice == '!': show_files(files = unchecked_files, header = "Unchecked Files: ", symbol = choice)
 
 
 while True:
@@ -109,7 +133,7 @@ while True:
 
     try:
         choice = int(input("Enter choice (0 to quit): "))
-    except:
+    except ValueError:
         print("Input Error: Not a number!")
         continue
 
@@ -117,6 +141,7 @@ while True:
 
     if choice not in range(5):
         print("Choice Error: Invalid choice!")
+        continue
 
     path = input("Enter an absolute path: ")
     if not os.path.exists(path):
@@ -124,7 +149,6 @@ while True:
         continue
 
     is_folder = os.path.isdir(path)
-    is_file = os.path.isfile(path)
     generator = HashGenerator(path = path, is_folder = is_folder)
     tracker = FileIntegrityChecker(path = path)
 
@@ -134,7 +158,7 @@ while True:
         else: generator.save_hashed_folder()
 
     elif choice == 2:
-        if not is_file:
+        if is_folder:
             print("Path Error: path is not a file!")
         else: generator.save_hashed_file()
     
@@ -144,6 +168,12 @@ while True:
         else: tracker.check_folder()
 
     elif choice == 4:
-        if not is_file:
+        if is_folder:
             print("Path Error: path is not a file!")
-        else: tracker.check_file()
+        else: 
+            track = tracker.check_file()
+            if track:
+                print("~ File is unchanged")
+            elif track is False:
+                print("~ File modified")
+            else: print("~ File hasn't been hashed yet or couldn't be checked")
