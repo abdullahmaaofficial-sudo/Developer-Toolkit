@@ -1,58 +1,59 @@
+from pathlib import Path
 import shutil
 import os 
 
 FILE_TYPES = {
-    'images': [
+    'Images': [
         '.png', '.jpg', '.jpeg', '.bmp', '.gif', '.webp', '.svg', '.tiff', '.tif', 
         '.heic', '.heif', '.ico', '.psd', '.ai', '.eps', '.raw', '.cr2', '.nef', 
         '.orf', '.sr2', '.dng', '.ind', '.indd', '.jp2'
     ],
-    'videos': [
+    'Videos': [
         '.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.mpg', 
         '.mpeg', '.m2v', '.3gp', '.3g2', '.ogv', '.vob', '.mts', '.m2ts', '.ts', 
         '.asf', '.rm', '.rmvb', '.divx'
     ],
-    'audio': [
+    'Audio': [
         '.mp3', '.wav', '.aac', '.flac', '.ogg', '.m4a', '.wma', '.opus', '.aiff', 
         '.aif', '.mid', '.midi', '.alac', '.amr', '.ape', '.pcm'
     ],
-    'documents': [
+    'Documents': [
         '.pdf', '.doc', '.docx', '.odt', '.rtf', '.tex', '.txt', '.wpd', '.wps', 
         '.pages', '.epub', '.mobi', '.azw', '.azw3'
     ],
-    'spreadsheets': [
+    'Spreadsheets': [
         '.xls', '.xlsx', '.xlsm', '.xlsb', '.ods', '.csv', '.tsv', '.numbers'
     ],
-    'presentations': [
+    'Presentations': [
         '.ppt', '.pptx', '.pptm', '.odp', '.key', '.pps', '.ppsx'
     ],
-    'archives': [
+    'Compressed': [
         '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.iso', '.xz', '.tgz', 
         '.tbz2', '.cab', '.dmg', '.z', '.lz', '.lzma'
     ],
-    'code': [
+    'Code': [
         '.py', '.js', '.jsx', '.ts', '.tsx', '.html', '.css', '.scss', '.sass', 
         '.java', '.c', '.cpp', '.h', '.hpp', '.cs', '.php', '.rb', '.go', '.rs', 
         '.swift', '.kt', '.kts', '.sh', '.bash', '.zsh', '.ps1', '.bat', '.sql', 
         '.json', '.xml', '.yaml', '.yml', '.toml', '.ini', '.env', '.md', '.lua', 
         '.r', '.dart', '.m', '.scala', '.vue', '.svelte'
     ],
-    'executables': [
+    'Executables': [
         '.exe', '.msi', '.apk', '.app', '.bin', '.cmd', '.gadget', '.jar', '.wsf'
     ],
-    'fonts': [
+    'Fonts': [
         '.ttf', '.otf', '.woff', '.woff2', '.eot', '.fon'
     ],
-    'database': [
+    'Database': [
         '.db', '.sqlite', '.sqlite3', '.mdb', '.accdb', '.sql', '.pdb'
     ],
     '3d_models': [
         '.obj', '.stl', '.fbx', '.dae', '.blend', '.3ds', '.ply', '.gltf', '.glb'
     ],
-    'system_files': [
+    'System_files': [
         '.sys', '.dll', '.cur', '.ico', '.lnk', '.dmp', '.tmp', '.bak'
     ],
-    'disk_images': [
+    'Disk_images': [
         '.iso', '.img', '.vcd', '.toast', '.vmdk'
     ]
 }
@@ -62,7 +63,7 @@ def get_file_type(file):
     for file_type, extensions in FILE_TYPES.items():
         if file_ext in extensions:
             return file_type
-    return 'other'
+    return 'Other'
     
 class Base:
     def __init__(self, path):
@@ -77,11 +78,12 @@ class Base:
 
     def take_custom_files(self):
         if self.exists:
-            return [os.path.join(root,file) for root,sub_f,files in os.walk(self.folder_path) for file in files if not os.path.join(root,file) in self.specific_files]
+            return [os.path.join(root,file) for root,sub_f,files in os.walk(self.folder_path) for file in files 
+                    if not os.path.join(root,file) in self.specific_files]
 
     def handle_user_choice(self):
         temp_file_dict = {}
-        choice = input("Choose an option for custom organising and click any button for automatic organising: ")
+        choice = input("Select the number of the option you want, press enter to skip options: ")
         if not choice in ['1','2']: return 
         
         if choice == '1':
@@ -113,8 +115,6 @@ class Base:
 
             self.specific_files.append(temp_file_dict.get(file_num, ''))
 
-
-
 class Organiser(Base):
     def __init__(self, path):
         super().__init__(path)
@@ -142,22 +142,47 @@ class Organiser(Base):
                 print("New Path: ", new_path)
             except Exception as e:
                 print("Something went wrong, try again: ", e)
-        return "Folder organised successfully"
+        return "\nFolder organised successfully"
 
+    def delete_empty_folders(self):
+        base_folder = Path(self.folder_path)
+        empty_folders = [item for item in base_folder.rglob('*') if item.is_dir() and not any(item.iterdir())]
+        if not empty_folders: return
+
+        print("\n----- Empty Folders -----")
+        for folder in empty_folders:
+            print(f"→ {folder}")
+        print()
+
+        choice = input("Enter '1' to delete all empty folders (press enter to skip): ").strip()
+        if choice == '1':
+            for folder in empty_folders:
+                try:
+                    shutil.rmtree(folder)
+                except FileNotFoundError:
+                    print(f"Error: Folder doesn't exist, ({folder}) ")
+                except PermissionError:
+                    print(f"Error: Access denied, ({folder})")
+
+            return "~ Operation performed."
+        return "~ Operation skipped."
 
 print("============ FILE ORGANISER =============")
 print("→ Enter '1' for creating a custom folder")
 print("→ Enter '2' for not changing specific files location\n")
-user_folder = input("Enter an absolute folder path for organising: ")
 
+user_folder = input("Enter an absolute folder path for organising: ")
 ob = Organiser(user_folder)
+
 if ob.exists:
     ob.handle_user_choice()
     while True:
-        confirm_user = input("Enter '1' for continuing  and '0 for stopping: ")
-        if confirm_user in ['0','1']:
+        confirm_user = input("Press enter to organise and '0' to stop: ")
+        if confirm_user in ['0','']:
             break
-    if confirm_user == '1':
-        ob.organise_files()
-    else: print("\nThe operation were stop successfully.")
+    if confirm_user == '':
+        print(ob.organise_files())
+        result = ob.delete_empty_folders()
+        print(result if result else "")
+    else: print("\nThe operation is stoped.")
 else: print("Path doesn't exists, try to upload full path.")
